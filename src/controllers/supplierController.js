@@ -1,4 +1,4 @@
-import { Supplier, Product } from "../models/index.js";
+import { Supplier, Product, Satuan } from "../models/index.js";
 
 class SupplierController {
   // Get all suppliers
@@ -8,15 +8,23 @@ class SupplierController {
         include: [
           {
             model: Product,
-            as: "products", // Diubah dari "product" ke "products"
-            attributes: ["product_name", "satuan", "harga_jual", "harga_beli"],
-            through: { attributes: [] }, // Menghilangkan atribut dari tabel junction
+            as: "products",
+            attributes: ["product_name", "harga_jual", "harga_beli", "isi"],
+            through: { attributes: [] },
+            include: [
+              {
+                model: Satuan,
+                as: 'satuan',
+                attributes: ['satuan_name']
+              }
+            ]
           },
         ],
       });
+
       res.status(200).json({
         status: "success",
-        data: suppliers,
+        data: suppliers
       });
     } catch (error) {
       res.status(500).json({
@@ -36,9 +44,16 @@ class SupplierController {
         include: [
           {
             model: Product,
-            as: "products", // Diubah dari "product" ke "products"
-            attributes: ["product_name", "satuan", "harga_jual", "harga_beli"],
-            through: { attributes: [] }, // Menghilangkan atribut dari tabel junction
+            as: "products",
+            attributes: ["product_name", "harga_jual", "harga_beli", "isi"],
+            through: { attributes: [] },
+            include: [
+              {
+                model: Satuan,
+                as: 'satuan',
+                attributes: ['satuan_name']
+              }
+            ]
           },
         ],
       });
@@ -52,7 +67,7 @@ class SupplierController {
 
       res.status(200).json({
         status: "success",
-        data: supplier,
+        data: supplier
       });
     } catch (error) {
       res.status(500).json({
@@ -74,12 +89,10 @@ class SupplierController {
         supplier_address,
       });
 
-      // Jika ada product_ids, tambahkan relasi ke tabel junction
       if (product_ids && product_ids.length > 0) {
         await supplier.addProducts(product_ids);
       }
 
-      // Ambil data supplier beserta produknya
       const supplierWithProducts = await Supplier.findByPk(
         supplier.supplier_id,
         {
@@ -87,12 +100,14 @@ class SupplierController {
             {
               model: Product,
               as: "products",
-              attributes: [
-                "product_name",
-                "satuan",
-                "harga_jual",
-                "harga_beli",
-              ],
+              attributes: ["product_name", "harga_jual", "harga_beli", "isi"],
+              include: [
+                {
+                  model: Satuan,
+                  as: 'satuan',
+                  attributes: ['satuan_name']
+                }
+              ]
             },
           ],
         }
@@ -100,7 +115,7 @@ class SupplierController {
 
       res.status(201).json({
         status: "success",
-        data: supplierWithProducts,
+        data: supplierWithProducts
       });
     } catch (error) {
       res.status(500).json({
@@ -124,33 +139,36 @@ class SupplierController {
         });
       }
 
-      // Update data supplier
       await supplier.update({
         supplier_name,
         supplier_phone,
         supplier_address,
       });
 
-      // Jika ada product_ids, update relasi dengan produk
       if (product_ids) {
-        // Hapus semua relasi yang ada dan buat relasi baru
         await supplier.setProducts(product_ids);
       }
 
-      // Ambil data supplier yang sudah diupdate beserta produknya
       const updatedSupplier = await Supplier.findByPk(req.params.id, {
         include: [
           {
             model: Product,
             as: "products",
-            attributes: ["product_name", "satuan", "harga_jual", "harga_beli"],
+            attributes: ["product_name", "harga_jual", "harga_beli", "isi"],
+            include: [
+              {
+                model: Satuan,
+                as: 'satuan',
+                attributes: ['satuan_name']
+              }
+            ]
           },
         ],
       });
 
       res.status(200).json({
         status: "success",
-        data: updatedSupplier,
+        data: updatedSupplier
       });
     } catch (error) {
       res.status(500).json({
@@ -176,7 +194,7 @@ class SupplierController {
 
       res.status(200).json({
         status: "success",
-        message: "Supplier deleted successfully",
+        message: "Supplier deleted successfully"
       });
     } catch (error) {
       res.status(500).json({
@@ -193,17 +211,24 @@ class SupplierController {
         include: [
           {
             model: Product,
-            as: "products", // Diubah dari "product" ke "products"
-            attributes: ["product_name", "satuan", "harga_jual", "harga_beli"],
-            through: { attributes: [] }, // Menghilangkan atribut dari tabel junction
-            where: { product_id: req.params.productId }, // Memindahkan where ke dalam include
+            as: "products",
+            attributes: ["product_name", "harga_jual", "harga_beli", "isi"],
+            through: { attributes: [] },
+            where: { product_id: req.params.productId },
+            include: [
+              {
+                model: Satuan,
+                as: 'satuan',
+                attributes: ['satuan_name']
+              }
+            ]
           },
         ],
       });
 
       res.status(200).json({
         status: "success",
-        data: suppliers,
+        data: suppliers
       });
     } catch (error) {
       res.status(500).json({

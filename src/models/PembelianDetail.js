@@ -1,44 +1,36 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-const Product = sequelize.define("product", {
-    product_id: {
+const PembelianDetail = sequelize.define("pembelian_detail", {
+    pembelian_detail_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
     },
-    product_name: {
-        type: DataTypes.STRING(50),
-        allowNull: false,
-    },
-    category_id: {
+    pembelian_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: "category",
-            key: "category_id",
+            model: "pembelian",
+            key: "pembelian_id",
         },
     },
-    satuan_id: {
+    product_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
         references: {
-            model: "satuan",
-            key: "satuan_id",
+            model: "product",
+            key: "product_id",
         },
     },
-    isi: {
+    qty: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        defaultValue: 1,  // Default 1 jika tidak diisi
+        comment: "Jumlah dalam pieces (qty = jumlah_product × isi). Misal: 2 dus × 24 pcs = 48 pcs"
     },
     harga_beli: {
         type: DataTypes.INTEGER,
         allowNull: false,
-    },
-    harga_jual: {
-        type: DataTypes.INTEGER,
-        allowNull: true,
     },
     created_at: {
         type: DataTypes.DATE,
@@ -46,8 +38,8 @@ const Product = sequelize.define("product", {
         defaultValue: DataTypes.NOW,
     }
 }, {
-    timestamps: true, 
-    tableName: "product",
+    timestamps: true,
+    tableName: "pembelian_detail",
 });
 
-export default Product;
+export default PembelianDetail;

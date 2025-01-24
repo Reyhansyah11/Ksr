@@ -1,7 +1,6 @@
 // models/User.js
 import { DataTypes } from 'sequelize';
 import sequelize from '../config/database.js';
-import Toko from './Toko.js'
 // const Toko = require('./Toko');
 
 const User = sequelize.define('user', {
@@ -20,7 +19,7 @@ const User = sequelize.define('user', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Toko, // Model Toko
+      model: "toko", // Model Toko
       key: 'toko_id' // Primary key dari model Toko
     }
   }
@@ -30,7 +29,5 @@ const User = sequelize.define('user', {
 });
 
 // Relasi antara User dan Toko
-User.belongsTo(Toko, { foreignKey: 'toko_id', as: 'toko' });
-Toko.hasMany(User, { foreignKey: 'toko_id', as: 'users' });
 
 export default User;

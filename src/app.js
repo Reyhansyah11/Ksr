@@ -5,6 +5,9 @@ import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import supplierRoutes from './routes/supplierRoutes.js'
+import satuanRoutes from './routes/satuamRoutes.js'
+import pembelianRoutes from './routes/pembelianRoutes.js'
+import pembelianDetailRoutes from './routes/pembelianDetailRoutes.js'
 import { Category, Product } from './models/index.js';
 import cors from 'cors'; // Untuk menangani CORS jika diperlukan
 
@@ -33,7 +36,10 @@ app.use(cors()); // Tambahkan jika ada permintaan lintas domain
 app.use('/api/auth', authRoutes);
 app.use('/api', categoryRoutes);
 app.use('/api', productRoutes);
-app.use('/api', supplierRoutes)
+app.use('/api', supplierRoutes);
+app.use('/api', satuanRoutes);
+app.use('/api', pembelianRoutes);
+app.use('/api', pembelianDetailRoutes);
 
 // Default route
 app.get('/', (req, res) => {
