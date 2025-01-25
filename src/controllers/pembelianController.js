@@ -1,12 +1,11 @@
-import { Pembelian, Product, SupplierProduct, User, Toko, PembelianDetail } from "../models/index.js";
+import { Pembelian, Product, SupplierProduct, User, Toko, PembelianDetail, TokoProduct } from "../models/index.js";
+import TokoProductService from '../services/TokoProductService.js';
+
 class PembelianController {
     constructor() {
-        this.createPembelian = this.createPembelian.bind(this);
-        this.getPembelianById = this.getPembelianById.bind(this);
-        this.getAllPembelian = this.getAllPembelian.bind(this);
+        this.tokoProductService = new TokoProductService();
     }
 
-    // Fungsi untuk membuat transaksi pembelian baru
     createPembelian = async (req, res) => {
         try {
             const {
@@ -15,14 +14,13 @@ class PembelianController {
                 no_faktur,
                 tanggal_pembelian,
                 supplier_id,
-                products, // Daftar produk yang dibeli
-                bayar, // Jumlah yang sudah dibayar
+                products,
+                bayar,
             } = req.body;
 
             let totalPembelian = 0;
             let pembelianDetails = [];
 
-            // Validasi input
             if (!toko_id || !user_id || !no_faktur || !supplier_id || !products || !bayar) {
                 return res.status(400).json({
                     status: "error",
@@ -30,16 +28,11 @@ class PembelianController {
                 });
             }
 
-            // Menghitung total pembelian
             for (const product of products) {
                 const { product_id, jumlah_product } = product;
 
-                // Validasi apakah produk tersebut disuplai oleh supplier yang dipilih
                 const isProductFromSupplier = await SupplierProduct.findOne({
-                    where: {
-                        supplier_id,
-                        product_id,
-                    }
+                    where: { supplier_id, product_id }
                 });
 
                 if (!isProductFromSupplier) {
@@ -49,17 +42,11 @@ class PembelianController {
                     });
                 }
 
-                // Ambil data produk untuk menghitung harga
                 const productData = await Product.findByPk(product_id);
                 const totalHargaProduk = productData.harga_beli * jumlah_product;
-
-                // Tambahkan total pembelian
                 totalPembelian += totalHargaProduk;
 
-                // Menghitung qty berdasarkan jumlah produk yang dibeli dan isi per satuan produk
                 const qty = jumlah_product * productData.isi;
-
-                // Simpan detail pembelian untuk setiap produk
                 pembelianDetails.push({
                     product_id,
                     qty,
@@ -67,10 +54,8 @@ class PembelianController {
                 });
             }
 
-            // Menghitung sisa pembayaran
             const sisa = bayar - totalPembelian;
 
-            // Buat entri pembelian utama
             const pembelian = await Pembelian.create({
                 toko_id,
                 user_id,
@@ -82,7 +67,6 @@ class PembelianController {
                 sisa,
             });
 
-            // Menyimpan semua detail pembelian
             for (const detail of pembelianDetails) {
                 await PembelianDetail.create({
                     pembelian_id: pembelian.pembelian_id,
@@ -90,6 +74,19 @@ class PembelianController {
                     qty: detail.qty,
                     harga_beli: detail.harga_beli,
                 });
+
+                const [tokoProduct] = await TokoProduct.findOrCreate({
+                    where: { 
+                        toko_id,
+                        product_id: detail.product_id 
+                    },
+                    defaults: {
+                        stok: 0,
+                        harga_jual: Math.ceil(detail.harga_beli * 1.2)
+                    }
+                });
+
+                await tokoProduct.increment('stok', { by: detail.qty });
             }
 
             res.status(201).json({
@@ -105,7 +102,6 @@ class PembelianController {
         }
     }
 
-    // Fungsi untuk mendapatkan pembelian berdasarkan ID
     getPembelianById = async (req, res) => {
         try {
             const { id } = req.params;
@@ -149,7 +145,6 @@ class PembelianController {
         }
     }
 
-    // Fungsi untuk mendapatkan semua pembelian
     getAllPembelian = async (req, res) => {
         try {
             const pembelian = await Pembelian.findAll({

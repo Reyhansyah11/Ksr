@@ -7,6 +7,7 @@ import SupplierProduct from './SupplierProduct.js';
 import Satuan from './Satuan.js';
 import Pembelian from './Pembelian.js';  // Pastikan model Pembelian diimpor
 import PembelianDetail from './PembelianDetail.js';  // Pastikan model PembelianDetail diimpor
+import TokoProduct from './TokoProduct.js';
 
 // Relasi User - Toko
 User.belongsTo(Toko, { 
@@ -78,6 +79,21 @@ Product.hasMany(PembelianDetail, {
     as: 'pembelianDetails'
 });
 
+// Relasi TokoProduct
+Toko.belongsToMany(Product, {
+    through: TokoProduct,
+    foreignKey: 'toko_id',
+    otherKey: 'product_id',
+    as: 'products'
+});
+
+Product.belongsToMany(Toko, {
+    through: TokoProduct,
+    foreignKey: 'product_id', 
+    otherKey: 'toko_id',
+    as: 'toko'
+});
+
 // Ekspor semua model
 export {
     User,
@@ -88,5 +104,6 @@ export {
     SupplierProduct,
     Satuan,
     Pembelian,
-    PembelianDetail
+    PembelianDetail,
+    TokoProduct
 };

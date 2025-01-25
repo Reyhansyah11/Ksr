@@ -8,6 +8,7 @@ import supplierRoutes from './routes/supplierRoutes.js'
 import satuanRoutes from './routes/satuamRoutes.js'
 import pembelianRoutes from './routes/pembelianRoutes.js'
 import pembelianDetailRoutes from './routes/pembelianDetailRoutes.js'
+import TokoProductService from './services/TokoProductService.js';
 import { Category, Product } from './models/index.js';
 import cors from 'cors'; // Untuk menangani CORS jika diperlukan
 
@@ -18,7 +19,11 @@ const app = express();
 
 // Middleware
 app.use(express.json());
-app.use(cors()); // Tambahkan jika ada permintaan lintas domain
+// Konfigurasi CORS
+app.use(cors({
+  origin: 'http://localhost:5173', // Alamat frontend React
+  credentials: true,
+}));
 
 // Sinkronisasi Database
 (async () => {

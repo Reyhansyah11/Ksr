@@ -145,6 +145,21 @@ const authController = {
       res.status(500).json({ error: "Terjadi kesalahan saat logout!" });
     }
   },
+
+  // Get users with access_level "kasir"
+  getKasirUsers: async (req, res) => {
+    try {
+      const kasirUsers = await User.findAll({ where: { access_level: "kasir" } });
+
+      res.status(200).json({
+        message: "Berhasil mengambil data kasir!",
+        users: kasirUsers,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Terjadi kesalahan saat mengambil data kasir!" });
+    }
+  },
 };
 
 export default authController;

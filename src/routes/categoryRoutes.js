@@ -5,7 +5,7 @@ import {authorizeAdmin} from '../middleware/authorize.js';
 
 const router = express.Router();
 
-router.use(authenticateUser);
+    router.use(authenticateUser);
 
 const categoryController = new CategoryController();
 
