@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get('/kasirUsers', authenticateUser, authorizeAdmin, authController.getKasirUsers);
 router.post('/login', authController.login); // Login (Public Route)
+router.post('/login/supplier', authController.loginSupplier); // untuk supplier
 router.post('/register', authenticateUser, authorizeAdmin, authController.register); // Protected Route (Admin Only)
 router.post('/logout', authenticateUser, authController.logout); // Logout (User Must Be Authenticated)
 

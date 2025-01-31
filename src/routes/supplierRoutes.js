@@ -5,16 +5,13 @@ import { authorizeAdmin } from '../middleware/authorize.js';
 
 const router = express.Router();
 
-router.use(authenticateUser)
+router.use(authenticateUser);
 
 const supplierController = new SupplierController();
 
-// Bind the methods to maintain 'this' context
-router.get('/suppliers', supplierController.getAllSuppliers.bind(supplierController));
-router.get('/suppliers/:id', supplierController.getSupplierById.bind(supplierController));
-router.post('/suppliers/', authorizeAdmin, supplierController.createSupplier.bind(supplierController));
-router.put('/suppliers/:id', authorizeAdmin, supplierController.updateSupplier.bind(supplierController));
-router.delete('/suppliers/:id', authorizeAdmin, supplierController.deleteSupplier.bind(supplierController));
-router.get('/suppliers/product/:productId', supplierController.getSuppliersByProduct.bind(supplierController));
+router.get('/suppliers', supplierController.getAllSuppliers);
+router.get('/suppliers/:id', supplierController.getSupplierById);
+router.post('/suppliers', authorizeAdmin, supplierController.createSupplier);
+router.delete('/suppliers/:id', authorizeAdmin, supplierController.deleteSupplier);
 
 export default router;

@@ -8,6 +8,8 @@ import supplierRoutes from './routes/supplierRoutes.js'
 import satuanRoutes from './routes/satuamRoutes.js'
 import pembelianRoutes from './routes/pembelianRoutes.js'
 import pembelianDetailRoutes from './routes/pembelianDetailRoutes.js'
+import pelangganRoutes from './routes/pelangganRoutes.js'
+import penjualanRoutes from './routes/penjualanRoutes.js'
 import TokoProductService from './services/TokoProductService.js';
 import { Category, Product } from './models/index.js';
 import cors from 'cors'; // Untuk menangani CORS jika diperlukan
@@ -45,6 +47,8 @@ app.use('/api', supplierRoutes);
 app.use('/api', satuanRoutes);
 app.use('/api', pembelianRoutes);
 app.use('/api', pembelianDetailRoutes);
+app.use('/api', pelangganRoutes);
+app.use('/api', penjualanRoutes);
 
 // Default route
 app.get('/', (req, res) => {

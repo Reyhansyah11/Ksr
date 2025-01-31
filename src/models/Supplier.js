@@ -19,14 +19,18 @@ const Supplier = sequelize.define("supplier", {
         type: DataTypes.STRING(100),
         allowNull: false,
     },
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
     created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
     }
 }, {
-    timestamps: true, // Jika tidak menggunakan timestamps default Sequelize
-    tableName: "supplier", // Sesuaikan dengan nama tabel di database
+    timestamps: true,
+    tableName: "supplier",
 });
 
-export default Supplier
+export default Supplier;

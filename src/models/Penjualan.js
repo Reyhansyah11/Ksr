@@ -1,8 +1,8 @@
 import { DataTypes } from "sequelize";
 import sequelize from "../config/database.js";
 
-const Pembelian  = sequelize.define("pembelian", {
-    pembelian_id: {
+const Penjualan = sequelize.define("penjualan", {
+    penjualan_id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true,
@@ -23,39 +23,45 @@ const Pembelian  = sequelize.define("pembelian", {
             key: "user_id",
         },
     },
-    no_faktur: {
-        type: DataTypes.STRING(20),
-        allowNull: false,
+    pelanggan_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true, // Boleh null untuk pelanggan non-member
+        references: {
+            model: "pelanggan",
+            key: "pelanggan_id",
+        },
     },
-    tanggal_pembelian: {
+    tanggal_penjualan: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW,
-    },
-    supplier_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: "supplier",
-            key: "supplier_id",
-        },
     },
     total: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
-        comment: "Total = harga_beli × jumlah_product"
+        comment: "Total sebelum diskon"
+    },
+    diskon: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0,
+        comment: "Persentase diskon member"
+    },
+    total_akhir: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment: "Total setelah diskon"
     },
     bayar: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
     },
-    sisa: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-        comment: "Sisa = bayar - total"
+    keterangan: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
     },
     created_at: {
         type: DataTypes.DATE,
@@ -64,7 +70,7 @@ const Pembelian  = sequelize.define("pembelian", {
     }
 }, {
     timestamps: true,
-    tableName: "pembelian",
+    tableName: "penjualan",
 });
 
-export default Pembelian;
+export default Penjualan;

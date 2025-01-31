@@ -10,12 +10,12 @@ router.use(authenticateUser);
 const pembelianDetailController = new PembelianDetailController();
 
 // Endpoint untuk mendapatkan semua detail pembelian
-router.get("/", pembelianDetailController.getAllPembelianDetails);
+router.get("/details", authorizeAdmin, pembelianDetailController.getAllPembelianDetails);
 
 // Endpoint untuk mendapatkan detail pembelian berdasarkan pembelian ID
-router.get("/pembelian/:pembelian_id", pembelianDetailController.getPembelianDetailsByPembelianId);
+router.get("/details/pembelian/:pembelian_id", authorizeAdmin, pembelianDetailController.getPembelianDetailsByPembelianId);
 
 // Endpoint untuk mendapatkan detail pembelian berdasarkan product ID
-router.get("/product/:product_id", pembelianDetailController.getPembelianDetailsByProductId);
+router.get("/details/product/:product_id", authorizeAdmin, pembelianDetailController.getPembelianDetailsByProductId);
 
 export default router;

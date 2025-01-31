@@ -32,6 +32,10 @@ const PembelianDetail = sequelize.define("pembelian_detail", {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    harga_jual: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+    },
     created_at: {
         type: DataTypes.DATE,
         allowNull: false,

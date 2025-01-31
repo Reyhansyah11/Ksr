@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import {User, Toko} from '../models/index.js'
+import {User, Toko, Supplier} from '../models/index.js'
 
 // Kunci rahasia JWT
 const JWT_SECRET = process.env.JWT_SECRET; // Ganti dengan kunci rahasia yang aman
@@ -134,6 +134,46 @@ const authController = {
       res.status(500).json({ error: "Terjadi kesalahan saat login!" });
     }
   },
+
+  loginSupplier: async (req, res) => {
+    try {
+      const { supplier_name, password } = req.body;
+   
+      if (!supplier_name || !password) {
+        return res.status(400).json({ error: "Supplier name dan password wajib diisi!" });
+      }
+   
+      const supplier = await Supplier.findOne({ where: { supplier_name } });
+      if (!supplier) {
+        return res.status(404).json({ error: "Supplier tidak ditemukan!" });
+      }
+   
+      const isPasswordValid = await bcrypt.compare(password, supplier.password);
+      if (!isPasswordValid) {
+        return res.status(401).json({ error: "Password salah!" });
+      }
+   
+      const token = jwt.sign(
+        {
+          supplier_id: supplier.supplier_id,
+          role: 'supplier'
+        },
+        process.env.JWT_SECRET,
+        { algorithm: "HS256", expiresIn: "1d" } // Token berlaku selama 1 hari
+      );
+   
+      res.status(200).json({
+        message: "Login berhasil!",
+        token,
+        supplier: {
+          id: supplier.supplier_id,
+          name: supplier.supplier_name
+        }
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Terjadi kesalahan saat login!" });
+    }
+   },
 
   // Logout user
   logout: (req, res) => {

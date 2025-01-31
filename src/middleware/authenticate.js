@@ -7,12 +7,9 @@ export const authenticateUser = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    req.user = decoded; // This will now include the role for suppliers
     next();
   } catch (error) {
     res.status(401).json({ error: 'Invalid token.' });
   }
 };
-
-
-

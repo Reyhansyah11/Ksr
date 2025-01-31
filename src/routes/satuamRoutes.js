@@ -1,11 +1,8 @@
 import express from "express";
 import SatuanController from "../controllers/satuanController.js";
-import { authenticateUser } from "../middleware/authenticate.js";
-import { authorizeAdmin } from "../middleware/authorize.js";
+import { authorizeSupplier } from '../middleware/authSupplier.js';
 
 const router = express.Router();
-
-router.use(authenticateUser);
 
 const satuanController = new SatuanController();
 
@@ -16,12 +13,12 @@ router.get("/satuan", satuanController.getAllSatuan);
 router.get("/satuan/:id", satuanController.getSatuanById);
 
 // Route to create new satuan
-router.post("/satuan", authorizeAdmin, satuanController.createSatuan);
+router.post("/satuan", authorizeSupplier, satuanController.createSatuan);
 
 // Route to update satuan
-router.put("/satuan/:id", authorizeAdmin, satuanController.updateSatuan);
+router.put("/satuan/:id", authorizeSupplier, satuanController.updateSatuan);
 
 // Route to delete satuan
-router.delete("/satuan/:id", authorizeAdmin, satuanController.deleteSatuan);
+router.delete("/satuan/:id", authorizeSupplier, satuanController.deleteSatuan);
 
 export default router;
