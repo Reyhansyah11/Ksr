@@ -22,7 +22,7 @@ const Pelanggan = sequelize.define("pelanggan", {
     is_member: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
-        defaultValue: false
+        defaultValue: true
     },
     member_id: {
         type: DataTypes.STRING(50),
@@ -33,7 +33,11 @@ const Pelanggan = sequelize.define("pelanggan", {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW,
-    }
+    },
+    last_transaction_date: {
+        type: DataTypes.DATE,
+        allowNull: true
+      }
 }, {
     timestamps: true,
     tableName: "pelanggan"
@@ -49,5 +53,14 @@ Pelanggan.prototype.hitungDiskon = function(totalBelanja) {
     
     return 0;
 };
+
+Pelanggan.prototype.isExpired = function() {
+    if (!this.last_transaction_date) return false;
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    return this.last_transaction_date < thirtyDaysAgo;
+  };
 
 export default Pelanggan;

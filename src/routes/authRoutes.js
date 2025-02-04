@@ -9,6 +9,6 @@ router.get('/kasirUsers', authenticateUser, authorizeAdmin, authController.getKa
 router.post('/login', authController.login); // Login (Public Route)
 router.post('/login/supplier', authController.loginSupplier); // untuk supplier
 router.post('/register', authenticateUser, authorizeAdmin, authController.register); // Protected Route (Admin Only)
-router.post('/logout', authenticateUser, authController.logout); // Logout (User Must Be Authenticated)
+router.post('/logout', authController.logout); 
 
 export default router;

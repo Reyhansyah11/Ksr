@@ -27,6 +27,10 @@ Product.belongsTo(Satuan, { foreignKey: 'satuan_id', as: 'satuan' });
 Supplier.hasMany(Product, { foreignKey: 'supplier_id', as: 'products' });
 Product.belongsTo(Supplier, { foreignKey: 'supplier_id', as: 'supplier' });
 
+// Add this to your existing relationships
+Supplier.hasMany(Category, { foreignKey: 'supplier_id', as: 'category' });
+Category.belongsTo(Supplier, { foreignKey: 'supplier_id', as: 'supplier' });
+
 // Relasi Pembelian - PembelianDetail
 Pembelian.hasMany(PembelianDetail, { foreignKey: 'pembelian_id', as: 'details' });
 PembelianDetail.belongsTo(Pembelian, { foreignKey: 'pembelian_id', as: 'pembelian' });

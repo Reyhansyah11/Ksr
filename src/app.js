@@ -1,6 +1,7 @@
 import express from 'express';
 import sequelize from './config/database.js';
 import dotenv from 'dotenv';
+import expirySchedulerService from './services/expirySchedulerService.js';
 import authRoutes from './routes/authRoutes.js';
 import categoryRoutes from './routes/categoryRoutes.js';
 import productRoutes from './routes/productRoutes.js';
@@ -27,6 +28,18 @@ app.use(cors({
   credentials: true,
 }));
 
+// Tambahkan scheduler untuk cek member expired
+const startMemberExpiryScheduler = () => {
+  // Jalankan pengecekan setiap hari pada jam 00:00
+  setInterval(async () => {
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() === 0) {
+      console.log('Menjalankan pengecekan member expired...');
+      await memberExpiryService.checkAndUpdateExpiredMembers();
+    }
+  }, 60000); // Check setiap menit
+};
+
 // Sinkronisasi Database
 (async () => {
   try {
@@ -34,6 +47,10 @@ app.use(cors({
     console.log('Database connected!');
     await sequelize.sync({ alter: true }); // Alter, gunakan force untuk reset tabel (hati-hati menggunakan force)
     console.log('Database synchronized!');
+
+    // Mulai scheduler dengan service baru
+    expirySchedulerService.startExpiryChecker();
+    console.log('Member expiry scheduler dimulai');
   } catch (error) {
     console.error('Unable to connect to the database:', error);
   }

@@ -11,8 +11,8 @@ const penjualanController = new PenjualanController();
 // Routes untuk kasir dan admin
 router.post("/penjualan", penjualanController.createPenjualan);
 router.get("/penjualan", penjualanController.getAllPenjualan);
+router.get("/penjualan/daily-sales", penjualanController.getDailySales);
 router.get("/penjualan/:id", penjualanController.getPenjualanById);
-router.get("/penjualan/daily", penjualanController.getDailySales);
 
 // Routes khusus admin (laporan laba rugi)
 router.get("/penjualan/report", authorizeAdmin, penjualanController.getSalesReport);

@@ -79,11 +79,18 @@ class PenjualanController {
             // Hitung diskon jika ada pelanggan member
             let diskon = 0;
             if (pelanggan_id) {
+                // Update tanggal transaksi terakhir
+                await Pelanggan.update(
+                    { last_transaction_date: new Date() },
+                    { where: { pelanggan_id } }
+                );
+                
+                // Cek status member dan hitung diskon
                 const pelanggan = await Pelanggan.findByPk(pelanggan_id);
                 if (pelanggan && pelanggan.is_member) {
-                    if (total >= 1000000) diskon = 0.10;      // Diskon 10% untuk pembelian >= 1jt
-                    else if (total >= 300000) diskon = 0.05;  // Diskon 5% untuk pembelian >= 300rb
-                    else if (total >= 150000) diskon = 0.02;  // Diskon 2% untuk pembelian >= 150rb
+                    if (total >= 1000000) diskon = 0.10;      // 10% untuk >= 1jt
+                    else if (total >= 300000) diskon = 0.05;  // 5% untuk >= 300rb
+                    else if (total >= 150000) diskon = 0.02;  // 2% untuk >= 150rb
                 }
             }
 
@@ -279,7 +286,7 @@ class PenjualanController {
             const toko_id = req.user.toko_id;
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-
+    
             const sales = await Penjualan.findAll({
                 where: {
                     toko_id,
@@ -295,28 +302,43 @@ class PenjualanController {
                             {
                                 model: Product,
                                 as: "product",
-                                attributes: ["product_name"]
+                                attributes: ["product_name", "isi"]
                             }
                         ]
                     },
                     {
                         model: Pelanggan,
                         as: "pelanggan",
-                        attributes: ["nama_pelanggan", "is_member", "member_id"]
+                        attributes: ["nama_pelanggan", "is_member"]
+                    },
+                    {
+                        model: User,
+                        as: "user",
+                        attributes: ["nama_lengkap"]
                     }
                 ]
             });
-
-            const totalPenjualan = sales.reduce((sum, sale) => sum + sale.total_akhir, 0);
-
+    
+            const summary = sales.reduce((acc, sale) => {
+                acc.totalPenjualan += sale.total_akhir;
+                sale.details.forEach(detail => {
+                    acc.totalQty += detail.qty;
+                    // Hitung HPP per unit menggunakan isi dari product
+                    const hpp_per_unit = detail.harga_beli / detail.product.isi;
+                    acc.totalHPP += detail.qty * hpp_per_unit;
+                });
+                acc.totalLaba = acc.totalPenjualan - acc.totalHPP;
+                return acc;
+            }, { totalQty: 0, totalPenjualan: 0, totalHPP: 0, totalLaba: 0 });
+    
             res.json({
                 status: "success",
                 data: {
                     sales,
-                    totalPenjualan
+                    summary
                 }
             });
-
+    
         } catch (error) {
             res.status(500).json({
                 status: "error",
@@ -346,7 +368,7 @@ class PenjualanController {
                             {
                                 model: Product,
                                 as: "product",
-                                attributes: ["product_name"]
+                                attributes: ["product_name", "isi"]
                             }
                         ]
                     },
@@ -364,11 +386,14 @@ class PenjualanController {
                 acc.totalPenjualan += sale.total_akhir;
                 sale.details.forEach(detail => {
                     acc.totalQty += detail.qty;
-                    acc.totalHPP += detail.qty * detail.harga_beli;
+                    // HPP dihitung berdasarkan harga beli produk yang sebenarnya
+                    acc.totalHPP += detail.qty * detail.harga_beli; // harga_beli * qty per produk
                 });
+                // Laba dihitung sebagai total penjualan - total HPP
                 acc.totalLaba = acc.totalPenjualan - acc.totalHPP;
                 return acc;
             }, { totalQty: 0, totalPenjualan: 0, totalHPP: 0, totalLaba: 0 });
+            
 
             res.json({
                 status: "success",

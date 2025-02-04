@@ -13,4 +13,10 @@ router.post('/pelanggan', pelangganController.createPelanggan);
 router.put('/pelanggan/:id', pelangganController.updatePelanggan);
 router.delete('/pelanggan/:id', pelangganController.deletePelanggan);
 
+// Tambahkan rute baru untuk cek status member
+// Tambahkan di pelangganRoutes.js
+router.post('/pelanggan/reactivate/:id', pelangganController.reactivateMember);
+router.get('/pelanggan/member/status', pelangganController.getMemberStatus);
+
+
 export default router;

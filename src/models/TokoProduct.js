@@ -32,6 +32,10 @@ const TokoProduct = sequelize.define("toko_product", {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    harga_beli: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
 }, {
     timestamps: true,
     tableName: "toko_product",

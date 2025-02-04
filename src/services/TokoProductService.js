@@ -1,6 +1,13 @@
-import { TokoProduct, Product, Category, Satuan, Supplier } from '../models/index.js';
+import {
+  TokoProduct,
+  Product,
+  Category,
+  Satuan,
+  Supplier,
+} from "../models/index.js";
 
 class TokoProductService {
+  // Menambah stok setelah pembelian
   // Menambah stok setelah pembelian
   async updateStokAfterPembelian(toko_id, pembelian_id) {
     try {
@@ -23,10 +30,17 @@ class TokoProductService {
           defaults: {
             stok: 0,
             harga_jual: detail.harga_jual || detail.harga_beli * 1.2, // markup default 20%
+            harga_beli: detail.harga_beli, // Menambahkan harga beli
           },
         });
 
+        // Update stok setelah pembelian
         await tokoProduct.increment("stok", { by: detail.qty });
+
+        // Perbarui harga beli jika harga_beli lebih murah dari harga yang ada di toko
+        if (tokoProduct.harga_beli !== detail.harga_beli) {
+          await tokoProduct.update({ harga_beli: detail.harga_beli });
+        }
       }
     } catch (error) {
       throw new Error(`Gagal memperbarui stok: ${error.message}`);
@@ -60,38 +74,43 @@ class TokoProductService {
 
   // Mendapatkan informasi produk di toko tertentu
   // Di TokoProductService.js
+  // Mendapatkan informasi produk di toko tertentu
   async getAllTokoProducts(toko_id) {
     try {
-        const tokoProducts = await TokoProduct.findAll({
-            where: { toko_id },
-            include: [{
-                model: Product,
-                // Hapus 'as: product' karena kita menggunakan many-to-many
-                include: [
-                    {
-                        model: Category,
-                        as: 'category',
-                        attributes: ['category_name']
-                    },
-                    {
-                        model: Satuan,
-                        as: 'satuan',
-                        attributes: ['satuan_name']
-                    },
-                    {
-                        model: Supplier,
-                        as: 'supplier',
-                        attributes: ['supplier_name']
-                    }
-                ]
-            }]
-        });
+      const tokoProducts = await TokoProduct.findAll({
+        where: { toko_id },
+        include: [
+          {
+            model: Product,
+            include: [
+              {
+                model: Category,
+                as: "category",
+                attributes: ["category_name"],
+              },
+              {
+                model: Satuan,
+                as: "satuan",
+                attributes: ["satuan_name"],
+              },
+              {
+                model: Supplier,
+                as: "supplier",
+                attributes: ["supplier_name"],
+              },
+            ],
+          },
+        ],
+      });
 
-        return tokoProducts;
+      return tokoProducts.map((product) => ({
+        ...product.toJSON(),
+        harga_beli: product.harga_beli, // Pastikan harga_beli ada di response
+      }));
     } catch (error) {
-        throw new Error(`Gagal mendapatkan daftar produk toko: ${error.message}`);
+      throw new Error(`Gagal mendapatkan daftar produk toko: ${error.message}`);
     }
-}
+  }
 
   // Mendapatkan stok produk di toko
   async getStok(toko_id, product_id) {
@@ -106,43 +125,48 @@ class TokoProductService {
   }
 
   // Menambahkan method baru di TokoProductService
-async getProductsByCategory(toko_id, category_name) {
-  try {
+  async getProductsByCategory(toko_id, category_name) {
+    try {
       const tokoProducts = await TokoProduct.findAll({
-          where: { toko_id },
-          include: [{
-              model: Product,
-              include: [
-                  {
-                      model: Category,
-                      as: 'category',
-                      attributes: ['category_name'],
-                      where: {
-                          category_name: category_name
-                      }
-                  },
-                  {
-                      model: Satuan,
-                      as: 'satuan',
-                      attributes: ['satuan_name']
-                  },
-                  {
-                      model: Supplier,
-                      as: 'supplier',
-                      attributes: ['supplier_name']
-                  }
-              ]
-          }]
+        where: { toko_id },
+        include: [
+          {
+            model: Product,
+            include: [
+              {
+                model: Category,
+                as: "category",
+                attributes: ["category_name"],
+                where: {
+                  category_name: category_name,
+                },
+              },
+              {
+                model: Satuan,
+                as: "satuan",
+                attributes: ["satuan_name"],
+              },
+              {
+                model: Supplier,
+                as: "supplier",
+                attributes: ["supplier_name"],
+              },
+            ],
+          },
+        ],
       });
 
       return tokoProducts;
-  } catch (error) {
-      throw new Error(`Gagal mendapatkan produk berdasarkan kategori: ${error.message}`);
+    } catch (error) {
+      throw new Error(
+        `Gagal mendapatkan produk berdasarkan kategori: ${error.message}`
+      );
+    }
   }
-}
 
   // Update harga jual produk di toko
-  async updateHargaJual(toko_id, product_id, harga_jual) {
+  // Update harga jual dan harga beli produk di toko
+  async updateHargaJual(toko_id, product_id, harga_jual, harga_beli) {
     try {
       const tokoProduct = await TokoProduct.findOne({
         where: { toko_id, product_id },
@@ -152,10 +176,13 @@ async getProductsByCategory(toko_id, category_name) {
         throw new Error("Produk tidak tersedia di toko ini");
       }
 
-      await tokoProduct.update({ harga_jual });
+      // Update harga jual dan harga beli
+      await tokoProduct.update({ harga_jual, harga_beli });
       return tokoProduct;
     } catch (error) {
-      throw new Error(`Gagal memperbarui harga jual: ${error.message}`);
+      throw new Error(
+        `Gagal memperbarui harga jual dan harga beli: ${error.message}`
+      );
     }
   }
 }

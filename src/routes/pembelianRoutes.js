@@ -12,6 +12,7 @@ const pembelianController = new PembelianController();
 // Endpoint untuk membuat pembelian baru
 router.post("/pembelian", authorizeAdmin, pembelianController.createPembelian);
 
+
 // Endpoint untuk mendapatkan semua detail pembelian
 router.get("/pembelian/weekly-expenses", authorizeAdmin, pembelianController.getWeeklyExpenses);
 
