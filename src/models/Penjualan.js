@@ -63,11 +63,16 @@ const Penjualan = sequelize.define("penjualan", {
         type: DataTypes.STRING(100),
         allowNull: true,
     },
+    no_faktur: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        unique: true
+      },
     created_at: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW,
-    }
+    },
 }, {
     timestamps: true,
     tableName: "penjualan",

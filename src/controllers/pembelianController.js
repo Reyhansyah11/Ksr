@@ -390,9 +390,14 @@ class PembelianController {
             ],
           },
           {
+            model: Supplier,
+            as: "supplier",
+            attributes: ['supplier_name']
+          },
+          {
             model: User,
             as: "user",
-            attributes: ["user_name"],
+            attributes: ["username"],
           },
         ],
         order: [["created_at", "DESC"]],
