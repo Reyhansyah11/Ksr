@@ -65,6 +65,48 @@ class SupplierController {
    }
  }
 
+ async changePassword(req, res) {
+  try {
+    const supplier_id = req.user.supplier_id; // Ubah dari req.supplier_id menjadi req.user.supplier_id
+    const { oldPassword, newPassword } = req.body;
+
+    // Cari supplier berdasarkan ID
+    const supplier = await Supplier.findByPk(supplier_id);
+    if (!supplier) {
+      return res.status(404).json({
+        status: "error",
+        message: "Supplier tidak ditemukan"
+      });
+    }
+
+    // Verifikasi password lama
+    const isPasswordValid = await bcrypt.compare(oldPassword, supplier.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        status: "error",
+        message: "Password lama tidak sesuai"
+      });
+    }
+
+    // Hash password baru
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password
+    await supplier.update({ password: hashedNewPassword });
+
+    res.status(200).json({
+      status: "success",
+      message: "Password berhasil diubah"
+    });
+  } catch (error) {
+    console.error('Error dalam changePassword:', error);
+    res.status(500).json({
+      status: "error",
+      message: error.message
+    });
+  }
+}
+
  async deleteSupplier(req, res) {
    try {
      const supplier = await Supplier.findByPk(req.params.id);

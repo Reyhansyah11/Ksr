@@ -13,6 +13,9 @@ router.post("/penjualan", penjualanController.createPenjualan);
 router.get("/penjualan", penjualanController.getAllPenjualan);
 router.get("/penjualan/daily-sales", penjualanController.getDailySales);
 router.get("/penjualan/:id", penjualanController.getPenjualanById);
+router.get("/penjualan/kasir/history", penjualanController.getPenjualanByUserId);
+router.get("/penjualan/kasir/daily-sales", penjualanController.getDailySalesByUserId);
+
 
 // Routes khusus admin (laporan laba rugi)
 router.get("/penjualan/report", authorizeAdmin, penjualanController.getSalesReport);
