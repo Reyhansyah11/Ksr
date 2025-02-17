@@ -12,6 +12,9 @@ const penjualanController = new PenjualanController();
 router.post("/penjualan", penjualanController.createPenjualan);
 router.get("/penjualan", penjualanController.getAllPenjualan);
 router.get("/penjualan/daily-sales", penjualanController.getDailySales);
+// Tambahkan route baru di bawah route report yang sudah ada
+router.get("/penjualan/profit-loss-report", authorizeAdmin, penjualanController.getProfitLossReport);
+router.get("/penjualan/combined-report", authorizeAdmin, penjualanController.getCombinedReport);
 router.get("/penjualan/:id", penjualanController.getPenjualanById);
 router.get("/penjualan/kasir/history", penjualanController.getPenjualanByUserId);
 router.get("/penjualan/kasir/daily-sales", penjualanController.getDailySalesByUserId);

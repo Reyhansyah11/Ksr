@@ -4,10 +4,10 @@ import {
   Category,
   Satuan,
   Supplier,
+  PembelianDetail,
 } from "../models/index.js";
 
 class TokoProductService {
-  // Menambah stok setelah pembelian
   // Menambah stok setelah pembelian
   async updateStokAfterPembelian(toko_id, pembelian_id) {
     try {
@@ -29,15 +29,16 @@ class TokoProductService {
           },
           defaults: {
             stok: 0,
-            harga_jual: detail.harga_jual || detail.harga_beli * 1.2, // markup default 20%
-            harga_beli: detail.harga_beli, // Menambahkan harga beli
+            harga_jual: detail.harga_jual || detail.harga_beli * 1.2,
+            harga_beli: detail.harga_beli,
           },
         });
 
-        // Update stok setelah pembelian
-        await tokoProduct.increment("stok", { by: detail.qty });
+        // Update stok dengan memperhatikan isi produk
+        const stokDalamPcs = detail.qty * detail.product.isi;
+        await tokoProduct.increment("stok", { by: stokDalamPcs });
 
-        // Perbarui harga beli jika harga_beli lebih murah dari harga yang ada di toko
+        // Perbarui harga beli jika berbeda
         if (tokoProduct.harga_beli !== detail.harga_beli) {
           await tokoProduct.update({ harga_beli: detail.harga_beli });
         }

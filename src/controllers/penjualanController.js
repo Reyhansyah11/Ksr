@@ -2,10 +2,14 @@ import { Op, Sequelize } from "sequelize";
 import {
   Penjualan,
   PenjualanDetail,
+  Toko,
+  PembelianDetail,
+  Pembelian,
   TokoProduct,
   Product,
   User,
   Pelanggan,
+  Category,
 } from "../models/index.js";
 import TokoProductService from "../services/TokoProductService.js";
 import sequelize from "../config/database.js";
@@ -501,6 +505,408 @@ class PenjualanController {
       });
     }
   }
+
+  async getProfitLossReport(req, res) {
+    try {
+      const toko_id = req.user.toko_id;
+      let { startDate, endDate } = req.query;
+
+      if (!startDate || !endDate) {
+        return res.status(400).json({
+          status: "error",
+          message: "Tanggal awal dan akhir harus diisi",
+        });
+      }
+
+      // Konversi ke format datetime dengan timezone yang tepat
+      const startDateTime = new Date(startDate + "T00:00:00.000+07:00");
+      const endDateTime = new Date(endDate + "T23:59:59.999+07:00");
+
+      // Query data penjualan dengan join ke toko_product
+      const salesData = await PenjualanDetail.findAll({
+        attributes: [
+          "product_id",
+          [
+            Sequelize.fn("SUM", Sequelize.col("penjualan_detail.qty")),
+            "total_qty",
+          ],
+          [
+            Sequelize.fn(
+              "SUM",
+              Sequelize.literal(
+                "penjualan_detail.qty * (toko_product.harga_beli / product.isi)"
+              )
+            ),
+            "total_hpp",
+          ],
+          [
+            Sequelize.fn(
+              "SUM",
+              Sequelize.literal(
+                "penjualan_detail.qty * toko_product.harga_jual"
+              )
+            ),
+            "total_penjualan",
+          ],
+          [
+            Sequelize.literal(
+              "SUM(penjualan_detail.qty * toko_product.harga_jual) - SUM(penjualan_detail.qty * (toko_product.harga_beli / product.isi))"
+            ),
+            "laba",
+          ],
+        ],
+        include: [
+          {
+            model: Product,
+            as: "product",
+            attributes: ["product_name", "isi"],
+            required: true,
+            include: [
+              {
+                model: Category,
+                as: "category",
+                attributes: ["category_name"],
+                required: true,
+              },
+            ],
+          },
+          {
+            model: TokoProduct,
+            as: "toko_product",
+            attributes: [],
+            required: true,
+            where: { toko_id },
+          },
+          {
+            model: Penjualan,
+            as: "penjualan",
+            attributes: [],
+            required: true,
+            where: {
+              toko_id,
+              tanggal_penjualan: {
+                [Op.between]: [startDateTime, endDateTime],
+              },
+            },
+          },
+        ],
+        group: [
+          "penjualan_detail.product_id",
+          "product.product_id",
+          "product.category.category_id",
+        ],
+        having: Sequelize.literal("total_qty > 0"),
+        order: [
+          [Sequelize.col("product.category.category_name"), "ASC"],
+          [Sequelize.col("product.product_name"), "ASC"],
+        ],
+        raw: true,
+        nest: true,
+      });
+
+      // Format laporan
+      const report = {
+        detail_produk: salesData.map((item) => ({
+          kategori: item.product.category.category_name,
+          nama_produk: item.product.product_name,
+          qty_terjual: parseInt(item.total_qty),
+          total_hpp: parseInt(item.total_hpp),
+          total_penjualan: parseInt(item.total_penjualan),
+          laba: parseInt(item.laba),
+          margin:
+            (parseInt(item.total_hpp) > 0
+              ? (
+                  (parseInt(item.laba) / parseInt(item.total_hpp)) *
+                  100
+                ).toFixed(2)
+              : 0) + "%",
+        })),
+        ringkasan: salesData.reduce(
+          (acc, item) => {
+            acc.total_qty += parseInt(item.total_qty);
+            acc.total_hpp += parseInt(item.total_hpp);
+            acc.total_penjualan += parseInt(item.total_penjualan);
+            acc.total_laba += parseInt(item.laba);
+            return acc;
+          },
+          {
+            total_qty: 0,
+            total_hpp: 0,
+            total_penjualan: 0,
+            total_laba: 0,
+          }
+        ),
+        periode: {
+          tanggal_mulai: startDateTime,
+          tanggal_akhir: endDateTime,
+        },
+      };
+
+      // Hitung margin rata-rata hanya jika ada total_hpp
+      report.ringkasan.margin_rata_rata =
+        report.ringkasan.total_hpp > 0
+          ? (
+              (report.ringkasan.total_laba / report.ringkasan.total_hpp) *
+              100
+            ).toFixed(2) + "%"
+          : "0%";
+
+      res.json({
+        status: "success",
+        data: report,
+      });
+    } catch (error) {
+      console.error("Error in getProfitLossReport:", error);
+      res.status(500).json({
+        status: "error",
+        message: error.message,
+      });
+    }
+  }
+
+  // Di dalam class PenjualanController
+
+async getCombinedReport(req, res) {
+  try {
+    const toko_id = req.user.toko_id;
+    let { startDate, endDate } = req.query;
+
+    const startDateTime = new Date(startDate + 'T00:00:00.000+07:00');
+    const endDateTime = new Date(endDate + 'T23:59:59.999+07:00');
+
+    // 1. Get data pembelian (restock) with product information
+    const purchaseData = await PembelianDetail.findAll({
+      attributes: [
+        'product_id',
+        [Sequelize.fn('SUM', Sequelize.col('pembelian_detail.qty')), 'total_qty'],
+        [Sequelize.literal('pembelian_detail.harga_beli'), 'harga_beli']
+      ],
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['product_name', 'isi'],
+          required: true,
+          include: [
+            {
+              model: Category,
+              as: 'category',
+              attributes: ['category_name']
+            }
+          ]
+        },
+        {
+          model: Pembelian,
+          as: 'pembelian',
+          attributes: [],
+          where: {
+            toko_id,
+            tanggal_pembelian: {
+              [Op.between]: [startDateTime, endDateTime]
+            }
+          }
+        }
+      ],
+      group: [
+        'product_id', 
+        'product.product_id', 
+        'product.category.category_id',
+        'pembelian_detail.harga_beli'
+      ],
+      raw: true,
+      nest: true
+    });
+
+    // 2. Get data penjualan
+    const salesData = await PenjualanDetail.findAll({
+      attributes: [
+        'product_id',
+        [Sequelize.fn('SUM', Sequelize.col('penjualan_detail.qty')), 'total_qty'],
+        [Sequelize.fn('SUM', Sequelize.literal('penjualan_detail.qty * penjualan_detail.harga_jual')), 'total_penjualan'],
+        [Sequelize.fn('SUM', Sequelize.literal('penjualan_detail.qty * (penjualan_detail.harga_beli / product.isi)')), 'total_hpp']
+      ],
+      include: [
+        {
+          model: Product,
+          as: 'product',
+          attributes: ['product_name', 'isi'],
+          required: true,
+          include: [
+            {
+              model: Category,
+              as: 'category',
+              attributes: ['category_name']
+            }
+          ]
+        },
+        {
+          model: Penjualan,
+          as: 'penjualan',
+          attributes: [],
+          where: {
+            toko_id,
+            tanggal_penjualan: {
+              [Op.between]: [startDateTime, endDateTime]
+            }
+          }
+        }
+      ],
+      group: [
+        'product_id', 
+        'product.product_id', 
+        'product.category.category_id'
+      ],
+      raw: true,
+      nest: true
+    });
+
+    // 3. Organize data per kategori with corrected calculations
+    const categoryReport = {};
+
+    // Process purchase data with dus calculation
+    purchaseData.forEach(item => {
+      const category = item.product.category.category_name;
+      if (!categoryReport[category]) {
+        categoryReport[category] = {
+          pembelian: { qty: 0, total: 0 },
+          penjualan: { qty: 0, total: 0 },
+          hpp: 0,
+          laba: 0,
+          products: []
+        };
+      }
+
+      const qtyPcs = parseInt(item.total_qty);
+      const isiPerDus = item.product.isi;
+      const hargaPerDus = parseFloat(item.harga_beli);
+      const jumlahDus = Math.ceil(qtyPcs / isiPerDus);
+      const totalPembelian = jumlahDus * hargaPerDus;
+
+      categoryReport[category].pembelian.qty += qtyPcs;
+      categoryReport[category].pembelian.total += totalPembelian;
+
+      const existingProduct = categoryReport[category].products.find(
+        p => p.nama_produk === item.product.product_name
+      );
+
+      if (existingProduct) {
+        existingProduct.pembelian.qty += qtyPcs;
+        existingProduct.pembelian.total += totalPembelian;
+        existingProduct.pembelian.harga_satuan = hargaPerDus;
+        existingProduct.pembelian.isi_per_dus = isiPerDus;
+      } else {
+        categoryReport[category].products.push({
+          nama_produk: item.product.product_name,
+          pembelian: {
+            qty: qtyPcs,
+            total: totalPembelian,
+            harga_satuan: hargaPerDus,
+            isi_per_dus: isiPerDus
+          },
+          penjualan: { qty: 0, total: 0 },
+          hpp: 0,
+          laba: 0
+        });
+      }
+    });
+
+    // Process sales data
+    salesData.forEach(item => {
+      const category = item.product.category.category_name;
+      if (!categoryReport[category]) {
+        categoryReport[category] = {
+          pembelian: { qty: 0, total: 0 },
+          penjualan: { qty: 0, total: 0 },
+          hpp: 0,
+          laba: 0,
+          products: []
+        };
+      }
+
+      const qtyPcs = parseInt(item.total_qty);
+      const totalPenjualan = parseInt(item.total_penjualan);
+      const totalHpp = parseInt(item.total_hpp);
+
+      categoryReport[category].penjualan.qty += qtyPcs;
+      categoryReport[category].penjualan.total += totalPenjualan;
+      categoryReport[category].hpp += totalHpp;
+      
+      const existingProduct = categoryReport[category].products.find(
+        p => p.nama_produk === item.product.product_name
+      );
+
+      if (existingProduct) {
+        existingProduct.penjualan.qty = qtyPcs;
+        existingProduct.penjualan.total = totalPenjualan;
+        existingProduct.hpp = totalHpp;
+        existingProduct.laba = totalPenjualan - totalHpp;
+      } else {
+        categoryReport[category].products.push({
+          nama_produk: item.product.product_name,
+          pembelian: { 
+            qty: 0, 
+            total: 0, 
+            harga_satuan: 0,
+            isi_per_dus: item.product.isi 
+          },
+          penjualan: { qty: qtyPcs, total: totalPenjualan },
+          hpp: totalHpp,
+          laba: totalPenjualan - totalHpp
+        });
+      }
+
+      categoryReport[category].laba = 
+        categoryReport[category].penjualan.total - categoryReport[category].hpp;
+    });
+
+    // 4. Calculate summary with corrected totals
+    const ringkasan = {
+      pembelian: {
+        qty: Object.values(categoryReport).reduce((sum, cat) => sum + cat.pembelian.qty, 0),
+        total: Object.values(categoryReport).reduce((sum, cat) => sum + cat.pembelian.total, 0)
+      },
+      penjualan: {
+        qty: Object.values(categoryReport).reduce((sum, cat) => sum + cat.penjualan.qty, 0),
+        total: Object.values(categoryReport).reduce((sum, cat) => sum + cat.penjualan.total, 0)
+      },
+      hpp: Object.values(categoryReport).reduce((sum, cat) => sum + cat.hpp, 0),
+      laba: Object.values(categoryReport).reduce((sum, cat) => sum + cat.laba, 0)
+    };
+
+    // Calculate additional metrics
+    ringkasan.margin = ringkasan.hpp > 0 
+      ? ((ringkasan.laba / ringkasan.hpp) * 100).toFixed(2)
+      : "0";
+
+    ringkasan.selisih_pembelian_penjualan = 
+      ringkasan.penjualan.total >= ringkasan.pembelian.total 
+        ? "-" 
+        : (ringkasan.pembelian.total - ringkasan.penjualan.total);
+
+    ringkasan.persentase_pencapaian = ringkasan.pembelian.total > 0
+      ? ((ringkasan.penjualan.total / ringkasan.pembelian.total) * 100).toFixed(2)
+      : "-";
+
+    res.json({
+      status: "success",
+      data: {
+        detail_kategori: categoryReport,
+        ringkasan,
+        periode: {
+          tanggal_mulai: startDateTime,
+          tanggal_akhir: endDateTime
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error("Error in getCombinedReport:", error);
+    res.status(500).json({
+      status: "error",
+      message: error.message
+    });
+  }
+}
 
   // Tambahkan method baru di class PenjualanController
 
