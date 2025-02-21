@@ -15,6 +15,9 @@ import TokoProductService from './services/TokoProductService.js';
 import { Category, Product } from './models/index.js';
 import cors from 'cors'; // Untuk menangani CORS jika diperlukan
 
+import DatabaseBackupService from './services/DatabaseBackupService.js';
+import backupRoutes from './routes/backupRoutes.js';
+
 // Load environment variables
 dotenv.config();
 
@@ -39,6 +42,9 @@ const startMemberExpiryScheduler = () => {
     }
   }, 60000); // Check setiap menit
 };
+
+const backupService = new DatabaseBackupService();
+backupService.scheduleBackup();
 
 // Sinkronisasi Database
 (async () => {
@@ -66,6 +72,7 @@ app.use('/api', pembelianRoutes);
 app.use('/api', pembelianDetailRoutes);
 app.use('/api', pelangganRoutes);
 app.use('/api', penjualanRoutes);
+app.use('/api', backupRoutes);
 
 // Default route
 app.get('/', (req, res) => {

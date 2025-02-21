@@ -792,18 +792,27 @@ async getCombinedReport(req, res) {
       if (existingProduct) {
         existingProduct.pembelian.qty += qtyPcs;
         existingProduct.pembelian.total += totalPembelian;
-        existingProduct.pembelian.harga_satuan = hargaPerDus;
+        existingProduct.pembelian.harga_beli_per_dus = hargaPerDus;
         existingProduct.pembelian.isi_per_dus = isiPerDus;
+        existingProduct.persediaan_akhir = {
+          qty: existingProduct.pembelian.qty - qtyPcs,
+          total: ((existingProduct.pembelian.harga_beli_per_dus / existingProduct.pembelian.isi_per_dus) 
+                 * (existingProduct.pembelian.qty - qtyPcs))
+        };
       } else {
         categoryReport[category].products.push({
           nama_produk: item.product.product_name,
           pembelian: {
             qty: qtyPcs,
             total: totalPembelian,
-            harga_satuan: hargaPerDus,
+            harga_beli_per_dus: hargaPerDus,
             isi_per_dus: isiPerDus
           },
           penjualan: { qty: 0, total: 0 },
+          persediaan_akhir: {
+            qty: qtyPcs,  // Karena belum ada penjualan
+            total: totalPembelian // Total pembelian sebagai nilai awal
+          },
           hpp: 0,
           laba: 0
         });
@@ -840,6 +849,11 @@ async getCombinedReport(req, res) {
         existingProduct.penjualan.total = totalPenjualan;
         existingProduct.hpp = totalHpp;
         existingProduct.laba = totalPenjualan - totalHpp;
+        existingProduct.persediaan_akhir = {
+          qty: existingProduct.pembelian.qty - qtyPcs,
+          total: ((existingProduct.pembelian.harga_beli_per_dus / existingProduct.pembelian.isi_per_dus) 
+                 * (existingProduct.pembelian.qty - qtyPcs))
+        };
       } else {
         categoryReport[category].products.push({
           nama_produk: item.product.product_name,
@@ -861,9 +875,15 @@ async getCombinedReport(req, res) {
 
     // 4. Calculate summary with corrected totals
     const ringkasan = {
-      pembelian: {
+      pembelian: {  // ini sudah termasuk persediaan awal + pembelian periode
         qty: Object.values(categoryReport).reduce((sum, cat) => sum + cat.pembelian.qty, 0),
         total: Object.values(categoryReport).reduce((sum, cat) => sum + cat.pembelian.total, 0)
+      },
+      persediaan_akhir: {  // barang yang belum terjual
+        qty: Object.values(categoryReport).reduce((sum, cat) => 
+          sum + (cat.pembelian.qty - cat.penjualan.qty), 0),
+        total: Object.values(categoryReport).reduce((sum, cat) => 
+          sum + (cat.pembelian.total - cat.hpp), 0)
       },
       penjualan: {
         qty: Object.values(categoryReport).reduce((sum, cat) => sum + cat.penjualan.qty, 0),
